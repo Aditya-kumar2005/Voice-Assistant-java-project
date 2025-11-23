@@ -1,0 +1,52 @@
+#JSGF V1.0;
+grammar commands;
+
+// --- 1. Core Action Verbs ---
+<action_open> = open | start | launch | run | execute | enable | disable | increase | decrease | play | use | access | go | browse | visit | search | find | show | display | activate;
+<action_close> = close | exit | quit | stop | terminate | end;
+
+// --- 2. Targets ---
+<app_targets> = notepad | calculator | paint | command prompt | file explorer | snipping tool | task manager | task scheduler | code | control panel | settings | calendar | clock | word | excel | powerpoint | access | publisher | onenote | teams | skype | zoom | discord | slack | notepad plus plus | sublime text | visual studio | eclipse | pycharm | intellij | android studio | apache netbeans | copilot | onedrive documents | onedrive downloads | onedrive desktop | desktop | music | project | downloads | documents | video | pictures;
+<browser_targets> = chrome | firefox | edge | safari | opera | brave | vivaldi | internet explorer | gmail | youtube | google | facebook | twitter | whatsapp | instagram | linkedin | stack overflow | github | reddit | quora | amazon | flipkart | news | weather;
+
+// --- 3. Grouped Standalone Commands (To be reused efficiently) ---
+
+// 3.1. System Power/Lock Commands
+<power_lock> = shutdown system | restart system | lock system | sleep system | hibernate system | log off;
+
+// 3.2. Volume & Brightness Control
+<volume_brightness> = increase ( volume | brightness ) | decrease ( volume | brightness ) | mute volume | unmute volume | volume;
+
+// 3.3. Simple Utility Commands
+<utility_single> = windows terminal | git bash | python shell | voice access | hotspot | energy saver | wifi | update | updates | uptime | usage | clear;
+
+// 3.4. Time & Date Queries
+<time_date> = what time is it | what is the date | what is the time;
+
+// 3.5. Media Control Actions
+<media_control> = play music | play video | pause music | stop music | next track | previous track;
+
+// 3.6. Assistant Lifecycle Commands (Wake/Sleep)
+public <wake_word> = wake up my friend | my friend | friend | online mode;
+<lifecycle> = sleep | bye | goodbye | wake up | start listening | stop listening | exit;
+
+// --- PUBLIC COMMAND RULE (The Main Command Entry Point) ---
+// This rule combines all defined categories for the recognizer.
+public <command> =
+// 1. Open/Close commands using defined lists
+<action_open> (<app_targets> | <browser_targets>)
+| <action_close> (<app_targets> | <browser_targets>)
+
+// 2. Wake/Sleep and Lifecycle commands
+| <wake_word>
+| <lifecycle>
+
+// 3. Grouped Standalone Commands
+| <power_lock>
+| <volume_brightness>
+| <utility_single>
+| <time_date>
+| <media_control>
+
+
+;
