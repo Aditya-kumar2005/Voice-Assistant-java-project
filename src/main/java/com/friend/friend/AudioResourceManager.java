@@ -2,58 +2,46 @@ package com.friend.friend;
 
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import javax.sound.sampled.*;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.FloatControl;
+import javax.sound.sampled.Line;
+import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.Mixer;
+import javax.sound.sampled.SourceDataLine;
+import javax.sound.sampled.FloatControl.Type;
+import javax.sound.sampled.Mixer.Info;
 
-/**
- * Manages access to microphone and speaker resources in a thread-safe manner.
- * Also provides utilities to detect active system audio playback.
- */
 public class AudioResourceManager {
-
-    // --- Locking Mechanism ---
-
-    private static final AudioResourceManager INSTANCE = new AudioResourceManager();
-
-    /** Lock for controlling access to the microphone. (CRITICAL FIX: Was missing) */
     private static final Lock micLock = new ReentrantLock();
-
-    /** Lock for controlling access to the speaker. */
     private static final Lock speakerLock = new ReentrantLock();
-
-    /** Flag indicating whether the microphone is currently locked by the application. */
     private static volatile boolean micLocked = false;
-
-    /** Flag indicating whether the speaker is currently locked by the application. */
     private static volatile boolean speakerLocked = false;
 
     /**
-     * Returns the single instance of the AudioResourceManager.
-     */
-    public static AudioResourceManager getInstance() {
-        return INSTANCE;
-    }
-
-    // --- Microphone Access ---
-
-    /**
-     * Requests exclusive access to the microphone.
-     * @return true if access is granted; false if already locked.
+     * Attempts to acquire exclusive access to the microphone.
+     * @return true if access was granted, false if already locked.
      */
     public static boolean requestMicAccess() {
-        // Use tryLock to allow non-blocking attempts in the main loop, but the current logic uses lock() and checks state.
-        // Sticking to the original lock/check pattern but ensuring the lock is released in all cases.
         micLock.lock();
+        boolean granted;
+
         try {
-            if (micLocked) return false;
+            if (micLocked) {
+                granted = false;
+                return granted;
+            }
+
             micLocked = true;
-            return true;
+            granted = true;
         } finally {
             micLock.unlock();
         }
+
+        return granted;
     }
 
     /**
-     * Releases the microphone lock, allowing other components to access it.
+     * Releases the microphone lock.
      */
     public static void releaseMic() {
         micLock.lock();
@@ -64,25 +52,31 @@ public class AudioResourceManager {
         }
     }
 
-    // --- Speaker Access ---
-
     /**
-     * Requests exclusive access to the speaker.
-     * @return true if access is granted; false if already locked.
+     * Attempts to acquire exclusive access to the speaker.
+     * @return true if access was granted, false if already locked.
      */
     public static boolean requestSpeakerAccess() {
         speakerLock.lock();
+        boolean granted;
+
         try {
-            if (speakerLocked) return false;
+            if (speakerLocked) {
+                granted = false;
+                return granted;
+            }
+
             speakerLocked = true;
-            return true;
+            granted = true;
         } finally {
             speakerLock.unlock();
         }
+
+        return granted;
     }
 
     /**
-     * Releases the speaker lock, allowing other components to access it.
+     * Releases the speaker lock.
      */
     public static void releaseSpeaker() {
         speakerLock.lock();
@@ -93,70 +87,69 @@ public class AudioResourceManager {
         }
     }
 
-    // --- System Status Check ---
-
     /**
-     * Checks whether the speaker is currently active.
-     * This includes both internal usage (e.g., TTS playback) and external audio activity.
-     * @return true if speaker is in use or system audio is playing; false otherwise.
+     * Checks if the speaker is currently in use, either because 
+     * this application has locked it (speakerLocked == true) or 
+     * because other system audio is currently playing.
+     * @return true if speaker is active, false otherwise.
      */
     public static boolean isSpeakerActive() {
-        // We only need to lock the speakerLock if we are modifying the state. 
-        // For a read-only check, just checking the volatile flag is usually fine, 
-        // but locking ensures the read of the volatile flag is atomic with respect to the write.
-        if (speakerLocked) return true;
-        return isSystemAudioPlaying();
+        return speakerLocked || isSystemAudioPlaying();
     }
 
     /**
-     * Attempts to detect if external audio is currently playing through system output lines.
-     * Safely inspects available SourceDataLines and checks for active playback and volume.
-     *
-     * @return true if any open and active SourceDataLine is found with audible volume.
+     * Iterates through all available mixers and SourceDataLines to check 
+     * if any audio is actively playing through the system speakers.
+     * @return true if system audio is playing, false otherwise.
      */
     private static boolean isSystemAudioPlaying() {
         try {
-            Mixer.Info[] mixers = AudioSystem.getMixerInfo();
-            for (Mixer.Info mixerInfo : mixers) {
+            Info[] mixerInfos = AudioSystem.getMixerInfo();
+            
+            for(Info mixerInfo : mixerInfos) {
                 Mixer mixer = AudioSystem.getMixer(mixerInfo);
-
-                // Inspect only output-capable lines
-                Line.Info[] sourceLines = mixer.getSourceLineInfo();
-
-                for (Line.Info info : sourceLines) {
+                javax.sound.sampled.Line.Info[] sourceLines = mixer.getSourceLineInfo();
+                
+                for(javax.sound.sampled.Line.Info info : sourceLines) {
                     Line line = null;
+
                     try {
                         line = mixer.getLine(info);
+                        
+                        if (line instanceof SourceDataLine) {
+                            SourceDataLine dataLine = (SourceDataLine)line;
+                            
+                            // Check if line is open and actively playing/processing audio
+                            if (dataLine.isOpen() && dataLine.isActive()) {
+                                
+                                // Check volume control, if supported
+                                if (!dataLine.isControlSupported(Type.VOLUME)) {
+                                    return true; // Assume active if we can't check volume
+                                }
 
-                        // Safely cast and inspect SourceDataLine
-                        if (line instanceof SourceDataLine dataLine) {
-                            if (!dataLine.isOpen()) continue;
-
-                            if (dataLine.isActive()) {
-                                // Check volume level if supported
-                                if (dataLine.isControlSupported(FloatControl.Type.VOLUME)) {
-                                    FloatControl volume = (FloatControl) dataLine.getControl(FloatControl.Type.VOLUME);
-                                    if (volume.getValue() > 0.01f) {
-                                        return true; // Active and audible
-                                    }
-                                } else {
-                                    return true; // Active, volume control not available, assume audible
+                                FloatControl volume = (FloatControl)dataLine.getControl(Type.VOLUME);
+                                // Check if volume is above a minimal threshold
+                                if (volume.getValue() > 0.01F) { 
+                                    return true;
                                 }
                             }
                         }
-                    } catch (LineUnavailableException ignored) {
-                        // Line is unavailable, skip
+                    } catch (LineUnavailableException e) {
+                        // Ignore lines that are unavailable
                     } catch (Exception e) {
-                        System.err.printf("[AudioResourceManager]: Error inspecting line: %s, Message: %s\n", info.toString(), e.getMessage());
+                        System.err.printf("[AudioResourceManager]: Error inspecting line: %s, \nMessage: %s\n", info.toString(), e.getMessage());
                     } finally {
-                        // Important: Do not close the line if you just opened it via mixer.getLine(info), 
-                        // as this can interfere with other applications. We are only inspecting state.
+                        // Note: Generally, you shouldn't close the line here 
+                        // if it belongs to another application or is managed by the system.
+                        // However, if getLine() opens it, it should be closed. 
+                        // In this scenario, we trust the Mixers to manage their lines.
                     }
                 }
             }
         } catch (Exception e) {
             System.err.println("[AudioResourceManager]: General Audio check failed: " + e.getMessage());
         }
+
         return false;
     }
 }

@@ -5,89 +5,108 @@ import java.util.HashMap;
 import java.util.Map;
 import javax.swing.SwingUtilities;
 
-/**
- * Friend - Main application entrypoint (Swing).
- *
- * This file links all components: GUI, TTS, Recognizer, Dispatcher, and Command Groups.
- */
 public class Friend {
 
     public static void main(String[] args) {
-        // Ensure Swing UI initializes on the Event Dispatch Thread (EDT).
         SwingUtilities.invokeLater(() -> {
+            FileSearcher fileSearcher = null;
+            GoogleSearcher googleSearcher = null;
             SpeechEngine tts = null;
             EchoPilotRecognizer recognizer = null;
+            EchoPilotGUI gui = null;
+            CommandDispatcher dispatcher = null;
+            SystemCommands systemCommands = null;
 
             try {
                 System.out.println("--- EchoPilot Startup ---");
                 
-                // 1. Initialize core components
+                // 1. Initialize GUI
+                gui = new EchoPilotGUI();
+                gui.setVisible(true); 
+    
+                // 2. Initialize core services (TTS, Searchers)
                 tts = new SpeechEngine();
-                CommandDispatcher dispatcher = new CommandDispatcher(tts);
-
-                // 2. Initialize and show the GUI
-                // NOTE: EchoPilotGUI.java must be implemented.
-                EchoPilotGUI gui = new EchoPilotGUI();
-                gui.setVisible(true);
-
-                // 3. Initialize the Recognizer and link to Dispatcher
-                recognizer = new EchoPilotRecognizer(dispatcher, gui, tts);
-                dispatcher.setRecognizer(recognizer);
-
-                // 4. Initialize command map and register ALL commands (Crucial step)
+                fileSearcher = new FileSearcher();
+                googleSearcher = new GoogleSearcher();
+                
+                // 3. Initialize Command Map
                 Map<String, Runnable> commandMap = new HashMap<>();
+                
+                // 4. Initialize Dispatcher and Recognizer with placeholder dependencies.
+                // We use null for the CommandMap and SystemCommands for now.
+                dispatcher = new CommandDispatcher(tts, null); 
+                
+                // The Recognizer needs the dispatcher, even if it's incomplete.
+                recognizer = new EchoPilotRecognizer(dispatcher, gui, tts); 
+                
+                // 5. Inject the missing link into the Dispatcher to resolve the circle.
+                // Now the Dispatcher knows the Recognizer!
+                dispatcher.setRecognizer(recognizer); 
+                
+                // 6. Initialize SystemCommands (SystemCommands needs the finished Recognizer/Searchers)
+                systemCommands = new SystemCommands(commandMap, tts, recognizer, googleSearcher, fileSearcher);
+                
+                // 7. Inject the finished SystemCommands back into the Dispatcher
+                // (Assuming a setSystemCommands method exists or is handled by a Command Map).
+                // NOTE: We MUST re-register the dispatcher with the correct search logic.
+                // For simplicity, let's assume the CommandDispatcher has a setter for SystemCommands.
+                dispatcher.setSystemCommands(systemCommands);
 
-                // Instantiate all command groups. Use a single try/catch for cleaner startup.
+                // 8. Instantiate command groups and register their commands
                 try {
-                    new SystemCommands(commandMap, tts, recognizer);
-                    // NOTE: AppCommands.java must be implemented, even if empty.
                     new AppCommands(commandMap); 
-                    new FolderCommands(commandMap);
-                    new MediaCommands(commandMap, tts, recognizer, gui);
+                    
+                    // FIX 1: Use the final 'dispatcher' instance instead of 'gui'
+                    new MediaCommands(commandMap, tts, recognizer, dispatcher); 
+                    
                     new LifecycleCommands(commandMap, recognizer);
+                    new FolderCommands(commandMap, fileSearcher, dispatcher); 
                 } catch (Throwable t) {
-                    System.err.println("[Friend] FATAL: Failed to initialize a Command Group. Check dependencies (e.g., FreeTTS): " + t.getMessage());
+                    System.err.println("[Friend] FATAL: Failed to initialize a Command Group. Check dependencies: " + t.getMessage());
                     throw t;
                 }
 
-                // Pass the fully built command map to the dispatcher
+                // 9. Finalize Dispatcher and Command Map
                 dispatcher.registerCommands(commandMap);
-
-                // 5. Define Shutdown Action
+                
+                // 10. Define Shutdown Action
                 final EchoPilotRecognizer finalRecognizer = recognizer;
                 final SpeechEngine finalTts = tts;
                 
                 Runnable shutdownAction = () -> {
                     System.out.println("Shutting down...");
-                    if (finalRecognizer != null) finalRecognizer.stop();
-                    if (finalTts != null) finalTts.shutdown();
+                    if (finalRecognizer != null) { 
+                        try { finalRecognizer.stop(); } catch (Throwable t) { System.err.println("Recognizer stop failed: " + t.getMessage()); } 
+                    }
+                    if (finalTts != null) { 
+                        try { finalTts.shutdown(); } catch (Throwable t) { System.err.println("TTS shutdown failed: " + t.getMessage()); } 
+                    }
                     System.exit(0);
                 };
 
-                // 6. Connect GUI buttons
+                // 11. Connect GUI controls
                 gui.setRecognizerControls(finalRecognizer::resume, finalRecognizer::pause, finalRecognizer.isListening());
 
-                // 7. Initialize the Tray Controller
+                // 12. Initialize the Tray Controller
                 try {
-                    new TrayController(recognizer, shutdownAction); // TrayController requires the shutdownAction
+                    new TrayController(recognizer, shutdownAction); 
                 } catch (AWTException e) {
                     System.err.println("[Friend] Warning: System Tray is not supported or failed to initialize.");
                 }
 
-                // 8. Add shutdown hook for graceful exit
+                // 13. Add shutdown hook for graceful exit
                 Runtime.getRuntime().addShutdownHook(new Thread(shutdownAction, "Shutdown-Hook"));
 
-                // 9. Start the main recognition loop
+                // 14. Start the main recognition loop
                 recognizer.startListening();
                 System.out.println("[Friend] EchoPilot Ready. Running in background.");
 
             } catch (Exception e) {
                 System.err.println("Fatal error during EchoPilot startup. Exiting.");
                 e.printStackTrace();
-                // Ensure TTS is stopped on error
-                if (tts != null) {
-                    try { tts.shutdown(); } catch (Throwable t) {}
-                }
+                // Safe shutdown on initialization failure
+                if (tts != null) { try { tts.shutdown(); } catch (Throwable t) {} }
+                if (recognizer != null) { try { recognizer.stop(); } catch (Throwable t) {} }
                 System.exit(1);
             }
         });

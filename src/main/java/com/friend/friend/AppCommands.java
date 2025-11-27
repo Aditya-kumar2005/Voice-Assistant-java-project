@@ -18,7 +18,7 @@ public class AppCommands {
      */
     private static final String[] OPENING_ACTIONS = {
         "open", "start", "launch", "run", "execute", "play", "use",
-        "access", "go", "browse", "visit", "search", "find", "show",
+        "access", "go", "browse", "visit", "show",
         "display", "activate"
     };
 

@@ -2,88 +2,107 @@ package com.friend.friend;
 
 import com.sun.speech.freetts.Voice;
 import com.sun.speech.freetts.VoiceManager;
+import javax.speech.synthesis.*;
+
 
 public class SpeechEngine {
+   private final Voice voice;
+   private Synthesizer synthesizer;
+   private Thread currentSpeechThread;
+   public SpeechEngine() {
+      System.setProperty("freetts.voices", "com.sun.speech.freetts.en.us.cmu_us_kal.KevinVoiceDirectory");
+      this.voice = VoiceManager.getInstance().getVoice("kevin16");
+      if (this.voice != null) {
+         this.voice.allocate();
+         System.out.println("[SpeechEngine]: Using voice: kevin16");
+      } else {
+         throw new IllegalStateException("Voice 'kevin16' not found. Check FreeTTS setup.");
+      }
+   }
 
-    private final Voice voice;
-    private final AudioResourceManager audioManager = new AudioResourceManager();
-
-    public SpeechEngine() {
-        System.setProperty("freetts.voices",
-                "com.sun.speech.freetts.en.us.cmu_us_kal.KevinVoiceDirectory");
-
-        voice = VoiceManager.getInstance().getVoice("kevin16");
-        
-        if (voice == null) {
-            throw new IllegalStateException("Required voice 'kevin16' not found. Check FreeTTS libraries and system properties.");
-        }
-
-        voice.allocate();
-        System.out.println("[SpeechEngine]: Using voice: " + voice.getName());
-    }
-
-    public void speak(String text, Runnable callback) {
-        if (text == null || text.trim().isEmpty()) {
-            if (callback != null) callback.run();
-            return;
-        }
-
-        Thread speakThread = new Thread(() -> {
-            if (!audioManager.requestSpeakerAccess()) {
-                System.err.println("[SpeechEngine]: Failed to acquire speaker lock. Skipping speech.");
-                if (callback != null) callback.run();
-                return;
-            }
-            
+   // ASYNC SPEAK (used for command response, accepts a callback)
+   public synchronized void speak(String text, Runnable callback) { 
+      if (!AudioResourceManager.requestSpeakerAccess()) {
+         System.out.println("Speaker busy. Skipping speech.");
+         // Execute callback even if speech is skipped, so recognition can resume/continue
+         if (callback != null) callback.run();
+      } else {
+         this.stop();
+         this.currentSpeechThread = new Thread(() -> {
             try {
-                System.out.println("[SpeechEngine]: Speaking: " + text);
-                voice.speak(text);
-                
-                // Increase delay for robust OS audio buffer clearance
-                try {
-                    Thread.sleep(500); 
-                } catch (InterruptedException ie) {
-                    Thread.currentThread().interrupt();
-                }
-
-            } catch (Exception e) {
-                System.err.println("[SpeechEngine] Error during speech: " + e.getMessage());
+               this.speakBlockingInternal(text);
+            } catch (Exception var6) {
+               System.err.println("Speech error: " + var6.getMessage());
             } finally {
-                // This call now includes the CRITICAL DEFENSIVE FIX to check and release the Mic lock
-                audioManager.releaseSpeaker(); 
-                if (callback != null) {
-                    callback.run(); 
-                }
+               AudioResourceManager.releaseSpeaker();
+               // Execute callback after speech is finished and speaker resource is released
+               if (callback != null) { 
+                  callback.run();
+               }
             }
-        }, "SpeechEngine-TTS-Thread");
 
-        speakThread.start();
-    }
+         }, "SpeechEngine-Thread");
+         this.currentSpeechThread.setDaemon(true);
+         this.currentSpeechThread.start();
+      }
+   }
 
-    public void speakInternal(String text) {
-        if (text == null || text.trim().isEmpty()) return;
-        
-        if (!audioManager.requestSpeakerAccess()) {
-            System.err.println("[SpeechEngine]: Failed to acquire speaker lock for internal speech.");
-            return;
-        }
-        
+   // Fallback ASYNC SPEAK without callback
+   public synchronized void speak(String text) {
+        speak(text, null);
+   }
+
+   // BLOCKING SPEAK (used for state changes like pause/resume)
+   public synchronized void speakBlocking(String text) {
+      if (!AudioResourceManager.requestSpeakerAccess()) {
+         System.out.println("Speaker busy (Blocking). Skipping speech.");
+      } else {
+         try {
+            this.speakBlockingInternal(text);
+         } catch (Exception var6) {
+            System.err.println("Blocking speech error: " + var6.getMessage());
+         } finally {
+            AudioResourceManager.releaseSpeaker();
+         }
+
+      }
+   }
+
+   private void speakBlockingInternal(String text) {
+      System.out.println("[SpeechEngine-Blocking]: Speaking: " + text);
+      try {
+         this.voice.speak(text);
+      } catch (IllegalStateException var3) {
+         if (var3.getMessage() == null || !var3.getMessage().contains("output queue closed")) {
+            throw var3;
+         }
+
+         System.err.println("[SpeechEngine]: Attempted speech after shutdown. Gracefully skipping.");
+      }
+
+   }
+
+   public synchronized void stop() {
+      if (this.currentSpeechThread != null && this.currentSpeechThread.isAlive()) {
+         this.currentSpeechThread.interrupt();
+         this.currentSpeechThread = null;
+      }
+
+   }
+
+   public void shutdown() {
+      this.stop();
+      if (synthesizer != null && this.voice != null) {
+        synthesizer.cancelAll();
+        // Check if the synthesizer has a separate closing mechanism
         try {
-            System.out.println("[SpeechEngine-Blocking]: Speaking: " + text);
-            voice.speak(text);
-            
-            // Minimal delay after blocking speech
-            Thread.sleep(200); 
-        } catch (Exception e) {
-            System.err.println("[SpeechEngine-Blocking] Error: " + e.getMessage());
-        } finally {
-            audioManager.releaseSpeaker(); // This now includes the defensive Mic check
+            synthesizer.deallocate();
+            this.voice.deallocate();
+            // synthesizer.getAudioPlayer().close(); // Example of a low-level close
+        } catch (Throwable t) {
+            System.err.println("[SpeechEngine] Warning during deallocation: " + t.getMessage());
         }
     }
-
-    public void shutdown() {
-        if (voice != null) {
-            voice.deallocate();
-        }
-    }
+      
+   }
 }

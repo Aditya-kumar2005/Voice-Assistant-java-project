@@ -1,0 +1,73 @@
+#JSGF V1.0;
+
+/**
+ * FULL GRAMMAR FOR ALL ECHO PILOT COMMANDS.
+ * All commands are specified in UPPERCASE to ensure maximum compatibility and resolve case-sensitivity issues.
+ */
+grammar test;
+
+// --- Verbs (Actions) ---
+<OPEN_VERB> = 
+    OPEN | START | LAUNCH | RUN | EXECUTE | PLAY | USE |
+    ACCESS | GO | BROWSE | VISIT | SEARCH | FIND | SHOW |
+    DISPLAY | ACTIVATE;
+
+<CLOSE_VERB> = CLOSE;
+<CONTROL_VERB> = INCREASE | DECREASE | ENABLE | DISABLE;
+<MEDIA_VERB> = NEXT | PREVIOUS;
+
+// --- Nouns (Targets) ---
+<APP_NAME> = 
+    NOTEPAD | CALCULATOR | CHROME | EDGE | WORD | EXCEL | 
+    POWERPOINT | GMAIL | YOUTUBE | FACEBOOK | WHATSAPP;
+
+<FOLDER_NAME> = 
+    DOWNLOADS | DOCUMENTS | DESKTOP | PICTURES | VIDEOS | MUSIC | PROJECT;
+    
+<ONEDRIVE_FOLDER> = ONEDRIVE <FOLDER_NAME>;
+
+<SYSTEM_TARGET> = HOTSPOT | WIFI | VOLUME | BRIGHTNESS;
+
+
+// --- Public Rule: All Commands ---
+public <COMMAND> = 
+    // --- 1. Activation Word ---
+    MY FRIEND |
+    
+    // --- 2. System Control Commands (shutdown, lock) ---
+    SHUTDOWN SYSTEM |
+    RESTART SYSTEM |
+    SLEEP SYSTEM |
+    HIBERNATE SYSTEM |
+    LOCK SYSTEM |
+    LOG OFF |
+    
+    // --- 3. Media and Utility Commands ---
+    PLAY MUSIC |
+    PAUSE MUSIC |
+    STOP MUSIC |
+    <MEDIA_VERB> TRACK |
+    CLEAR |
+    VIDEO |
+    WHAT IS THE TIME |
+    WHAT IS THE DATE |
+    
+    // --- 4. System Target Commands (enable/disable, volume/brightness) ---
+    <CONTROL_VERB> <SYSTEM_TARGET> |
+    
+    // --- 5. Lifecycle Commands ---
+    BYE |
+    GOODBYE |
+    GO TO SLEEP |
+    SLEEP |
+    STOP LISTENING |
+    START LISTENING |
+    WAKE UP |
+
+    // --- 6. App Commands (VERB + APP_NAME) ---
+    <OPEN_VERB> <APP_NAME> |
+    <CLOSE_VERB> <APP_NAME> |
+
+    // --- 7. Folder Commands (VERB + FOLDER) ---
+    <OPEN_VERB> <FOLDER_NAME> |
+    <OPEN_VERB> <ONEDRIVE_FOLDER>;
