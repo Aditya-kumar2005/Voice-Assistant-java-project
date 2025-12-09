@@ -1,0 +1,18 @@
+{
+  "voiceName": "default",
+  "volume": 0.8,
+  "theme": "light",
+  "enableTelemetry": false,
+  "wakeWord": "friend",
+  "firstLaunch": false,
+  "preferredBrowser": "chrome",
+  "folderLocations": {
+    "Desktop": "C:\\Users\\nanua\\Desktop",
+    "Music": "C:\\Users\\nanua\\Music",
+    "Documents": "C:\\Users\\nanua\\Documents",
+    "Downloads": "C:\\Users\\nanua\\Downloads"
+  },
+  "speechRate": 1.0,
+  "voiceGender": "male",
+  "logLevel": 2
+}

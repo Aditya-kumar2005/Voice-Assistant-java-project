@@ -6,11 +6,17 @@ grammar commands;
 <action_play> = play;
 <action_close> = close | exit | quit | stop | terminate | end;
 
-// --- 2. Targets ---
+// --- 2. Targets & Contextual Objects ---
+// The things your friend can act upon.
 <app_targets> = notepad | calculator | paint | command prompt | file explorer | snipping tool | task manager | task scheduler | code | control panel | settings | calendar | clock | word | excel | powerpoint | access | publisher | onenote | teams | skype | zoom | discord | slack | notepad plus plus | sublime text | visual studio | eclipse | pycharm | intellij | android studio | apache netbeans | copilot | onedrive documents | onedrive downloads | onedrive desktop | desktop | music | project | downloads | documents | video | pictures;
 <browser_targets> = chrome | firefox | edge | safari | opera | brave | vivaldi | internet explorer | gmail | youtube | google | facebook | twitter | whatsapp | instagram | linkedin | stack overflow | github | reddit | quora | amazon | flipkart | news | weather;
 
-// --- 3. Grouped Standalone Commands (To be reused efficiently) ---
+// NEW: This rule combines all targets and adds the words 'it' and 'that'
+// to support the **Context Memory** feature (e.g., "close it").
+<all_targets_with_context> = <app_targets> | <browser_targets> | it | that ;
+
+
+// --- 3. Grouped Standalone Commands ---
 
 // 3.1. System Power/Lock Commands
 <power_lock> = shutdown system | restart system | lock system | sleep system | hibernate system | log off;
@@ -31,22 +37,32 @@ grammar commands;
 public <wake_word> = wake up my friend | my friend | friend | online mode;
 <lifecycle> = sleep | bye | goodbye | wake up | start listening | stop listening | exit;
 
-// --- 4. NEW: Flexible Search Command ---
-// Placeholder for any word sequence to be recognized as the search query.
-// This must be defined in your dictionary.
+
+// --- 4. NEW: System Status & Monitoring Queries ---
+// This lets the user ask about the system health, which ties into the 
+// Proactive System Monitoring data you implemented.
+<system_query_target> = cpu | disk space | memory | ram | battery | system status;
+<system_query> = check <system_query_target> | what is my <system_query_target> | how is my <system_query_target> | what is the <system_query_target>;
+<monitor_control> = ( start | stop ) monitor | ( enable | disable ) proactive monitoring;
+
+
+// --- 5. NEW: Configuration and Help Commands (From Preferences/HelpSystem) ---
+// This opens the settings window and accesses the Help System.
+<config_help> = ( open | show | launch ) ( preferences | settings | customization ) | configure friend | friend help | help | what can i say | commands;
+
+
+// --- 6. Flexible Search Command ---
+// Allows "SEARCH" or "FIND" followed by up to 10 words.
 <search_term_word> = <app_targets> | <browser_targets> | ( a | an | the | file | for | song | movie | in | on | near | what | how | when | where | show | download | upload | weather | news ) ;
 <play_phrase> = <action_play> <search_term_word> <search_term_word> <search_term_word> <search_term_word> <search_term_word> <search_term_word> <search_term_word> <search_term_word> <search_term_word> <search_term_word> ;
-// Allows "SEARCH" or "FIND" followed by up to 10 words. You must ensure all possible search words are in your commands.dict.
-// The maximum number (10 here) prevents the recognizer from matching too many random background words.
 <search_phrase> = ( search | find ) <search_term_word> <search_term_word> <search_term_word> <search_term_word> <search_term_word> <search_term_word> <search_term_word> <search_term_word> <search_term_word> <search_term_word> ;
 
 
 // --- PUBLIC COMMAND RULE (The Main Command Entry Point) ---
-// This rule combines all defined categories for the recognizer.
 public <command> =
-// 1. Open/Close commands using defined lists
-<action_open> (<app_targets> | <browser_targets>)
-| <action_close> (<app_targets> | <browser_targets>)
+// 1. Open/Close commands using the new contextual object list
+<action_open> <all_targets_with_context>
+| <action_close> <all_targets_with_context>
 
 // 2. Wake/Sleep and Lifecycle commands
 | <wake_word>
@@ -59,7 +75,14 @@ public <command> =
 | <time_date>
 | <media_control>
 
-// 4. NEW: Flexible Search Command
+// 4. NEW: System Status & Monitoring Commands
+| <system_query>
+| <monitor_control>
+
+// 5. NEW: Configuration and Help Commands
+| <config_help>
+
+// 6. Flexible Search Command
 | <search_phrase>
 | <play_phrase>
 ;

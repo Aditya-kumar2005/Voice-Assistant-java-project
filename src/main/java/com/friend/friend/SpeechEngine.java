@@ -7,14 +7,16 @@ import javax.speech.synthesis.*;
 
 public class SpeechEngine {
    private final Voice voice;
-   private Synthesizer synthesizer;
+   //private Synthesizer synthesizer;
    private Thread currentSpeechThread;
-   public SpeechEngine() {
+   MergedEchoPilotApp gui;
+   public SpeechEngine(MergedEchoPilotApp gui) {
+      this.gui=gui;
       System.setProperty("freetts.voices", "com.sun.speech.freetts.en.us.cmu_us_kal.KevinVoiceDirectory");
       this.voice = VoiceManager.getInstance().getVoice("kevin16");
       if (this.voice != null) {
          this.voice.allocate();
-         System.out.println("[SpeechEngine]: Using voice: kevin16");
+         gui.updateStatus("[SpeechEngine]: Using voice: kevin16");
       } else {
          throw new IllegalStateException("Voice 'kevin16' not found. Check FreeTTS setup.");
       }
@@ -23,7 +25,7 @@ public class SpeechEngine {
    // ASYNC SPEAK (used for command response, accepts a callback)
    public synchronized void speak(String text, Runnable callback) { 
       if (!AudioResourceManager.requestSpeakerAccess()) {
-         System.out.println("Speaker busy. Skipping speech.");
+         gui.updateStatus("Speaker busy. Skipping speech.");
          // Execute callback even if speech is skipped, so recognition can resume/continue
          if (callback != null) callback.run();
       } else {
@@ -55,7 +57,7 @@ public class SpeechEngine {
    // BLOCKING SPEAK (used for state changes like pause/resume)
    public synchronized void speakBlocking(String text) {
       if (!AudioResourceManager.requestSpeakerAccess()) {
-         System.out.println("Speaker busy (Blocking). Skipping speech.");
+         gui.updateStatus("Speaker busy (Blocking). Skipping speech.");
       } else {
          try {
             this.speakBlockingInternal(text);
@@ -68,7 +70,7 @@ public class SpeechEngine {
       }
    }
 
-   private void speakBlockingInternal(String text) {
+   public void speakBlockingInternal(String text) {
       System.out.println("[SpeechEngine-Blocking]: Speaking: " + text);
       try {
          this.voice.speak(text);
@@ -77,32 +79,34 @@ public class SpeechEngine {
             throw var3;
          }
 
-         System.err.println("[SpeechEngine]: Attempted speech after shutdown. Gracefully skipping.");
+         gui.updateStatus("[SpeechEngine]: Attempted speech after shutdown. Gracefully skipping.");
       }
 
    }
 
    public synchronized void stop() {
+      // Safely interrupt and wait briefly for the current speech thread to finish.
+      // Use short-circuit && to avoid NullPointerException when thread is null.
       if (this.currentSpeechThread != null && this.currentSpeechThread.isAlive()) {
          this.currentSpeechThread.interrupt();
+         try {
+            this.currentSpeechThread.join(300); // wait up to 300ms
+         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+         }
          this.currentSpeechThread = null;
       }
 
    }
 
    public void shutdown() {
-      this.stop();
-      if (synthesizer != null && this.voice != null) {
-        synthesizer.cancelAll();
-        // Check if the synthesizer has a separate closing mechanism
+    this.stop();
+    if (this.voice != null) {
         try {
-            synthesizer.deallocate();
             this.voice.deallocate();
-            // synthesizer.getAudioPlayer().close(); // Example of a low-level close
         } catch (Throwable t) {
-            System.err.println("[SpeechEngine] Warning during deallocation: " + t.getMessage());
+            gui.updateStatus("[SpeechEngine] Warning during deallocation: " + t.getMessage());
         }
     }
-      
-   }
+}
 }

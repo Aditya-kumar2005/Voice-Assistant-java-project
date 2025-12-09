@@ -4,27 +4,53 @@ import java.util.Map;
 
 /**
  * Handles commands related to the application's listening state and lifecycle.
+ * Uses FriendlyBehavior to provide empathetic responses for pause/resume actions.
  */
 public class LifecycleCommands {
 
     // These words trigger a background pause (no system termination)
     private static final String[] PAUSE_TRIGGERS = {
-        "bye", "goodbye", "go to sleep", "sleep", "stop listening"
+        "bye", "goodbye", "go to sleep", "sleep","stop listening"
     };
-
+    private static final String[] START_TRIGGERS = {
+        "wake up" ,"start listening" ,"my friend" ,"friend" ,"wake up my friend"
+    };
     /**
      * @param map The command map to populate.
      * @param recognizer The instance of the EchoPilotRecognizer to control.
      */
-    public LifecycleCommands(Map<String, Runnable> map, EchoPilotRecognizer recognizer) {
-        
-        // Map PAUSE TRIGGERS to the recognizer's pause action.
-        for (String trigger : PAUSE_TRIGGERS) {
-            map.put(trigger, recognizer::pause); 
-        }
+    // Inside your LifecycleCommands constructor
+    public LifecycleCommands(Map<String, Runnable> map,EchoPilotRecognizer recognizer,MergedEchoPilotApp gui,CommandDispatcher dispatcher) {
 
-        // Map general resume triggers (aside from the wake phrase handled in the Recognizer loop)
-        map.put("start listening", recognizer::resume);
-        map.put("wake up", recognizer::resume);
-    }
+    for (String trigger : PAUSE_TRIGGERS) {
+            map.put(trigger, () -> {
+                recognizer.pause();
+                String friendlyPause = FriendlyBehavior.paused();
+                recognizer.getSpeechEngine().speakBlocking(friendlyPause);
+            });
+        }
+    for (String trigger : START_TRIGGERS) {
+            map.put(trigger, () -> {
+                String friendlyResume = FriendlyBehavior.resumed();
+                recognizer.getSpeechEngine().speak(friendlyResume);
+                recognizer.resume();
+            });
+        }
+    // Switch to Language Model
+    map.put("change to language model", () -> {
+        System.out.println("[Recognizer]: COMMAND DETECTED: Switch to LM Mode.");
+        try{
+            recognizer.switchToLanguageModel();
+        }catch(Exception e){}
+        
+    });
+
+    // Switch to Grammar Model
+    map.put("change to grammar model", () -> {
+        System.out.println("[Recognizer]: COMMAND DETECTED: Switch to Grammar Mode.");
+        try{
+            recognizer.switchToGrammar();
+        }catch(Exception e){}    
+    });
+}
 }

@@ -1,20 +1,23 @@
 package com.friend.friend;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 public class CommandDispatcher {
 
     private final SpeechEngine tts;
     private SystemCommands systemCommands;
+    MergedEchoPilotApp localGui;
     // Map to hold fixed commands (e.g., "open music player") mapped to their actions (Runnable)
     private volatile Map<String, Runnable> commandMap = Collections.emptyMap(); 
     
     private EchoPilotRecognizer recognizer; 
 
-    public CommandDispatcher(SpeechEngine tts, SystemCommands systemCommands) {
+    public CommandDispatcher(SpeechEngine tts, SystemCommands systemCommands,MergedEchoPilotApp localGui) {
         this.tts = tts;
         this.systemCommands = systemCommands;
+        this.localGui=localGui;
     }
     
     /**
@@ -29,6 +32,28 @@ public class CommandDispatcher {
     public void registerCommands(Map<String, Runnable> map) {
         // Use an unmodifiable map to prevent changes after registration
         this.commandMap = Collections.unmodifiableMap(map);
+    }
+
+    /**
+     * Add or replace a single command at runtime. This method merges the new command
+     * into the existing command map and re-registers it.
+     */
+    public synchronized void addCommand(String key, Runnable action) {
+        Map<String, Runnable> merged = new HashMap<>(this.commandMap);
+        merged.put(key.toLowerCase().trim(), action);
+        registerCommands(merged);
+    }
+
+    /**
+     * Register a Skill instance which can add commands or hooks into the dispatcher.
+     */
+    public void registerSkill(Skill skill) {
+        try {
+            skill.register(this);
+        } catch (Throwable t) {
+            System.err.println("Failed to register skill: " + t.getMessage());
+            t.printStackTrace();
+        }
     }
     
     // =======================================================
@@ -93,6 +118,7 @@ public class CommandDispatcher {
         if (action != null) {
             try {
                 // 1. Run the command action
+                localGui.updateStatus(normalizedCommand);
                 action.run();
                 
                 // 2. The Recognizer loop handles the TTS response ("Done") and subsequent pause.
@@ -101,16 +127,18 @@ public class CommandDispatcher {
                 System.err.println("[Dispatcher Error]: Failed to execute command: " + normalizedCommand);
                 e.printStackTrace();
                 
-                // Provide non-blocking error feedback, synchronized with mic pause
-                tts.speak("Sorry, I failed to execute that command.", recognizerPauseAction);
+                // Provide friendly error feedback, synchronized with mic pause
+                String friendlyError = FriendlyBehavior.apologize() + " " + FriendlyBehavior.waiting();
+                tts.speak(friendlyError, recognizerPauseAction);
             }
             
         } else {
-            // Command not recognized
+            // Command not recognized - use friendly response
             System.out.println("[Dispatcher]: Command not recognized: " + command);
             
-            // Provide non-blocking "not recognized" feedback, synchronized with mic pause
-            tts.speak("Command not recognized. Please try again.", recognizerPauseAction);
+            // Provide friendly "not recognized" feedback, synchronized with mic pause
+            String friendlyNotRecognized = FriendlyBehavior.commandNotRecognized(command);
+            tts.speak(friendlyNotRecognized, recognizerPauseAction);
         }
     }
 
@@ -141,14 +169,16 @@ public class CommandDispatcher {
             // --- Local File Search ---
             System.out.println("[Dispatcher]: Executing Local File Search for: " + searchTerm);
             systemCommands.searchLocalFiles(searchTerm);
+            localGui.updateStatus("Searching your files for " + searchTerm);
             ttsResponse = "Searching your files for " + searchTerm;
             
         } else {
             
             // --- Default to Google/Web Search ---
             System.out.println("[Dispatcher]: Executing Web Search for: " + searchTerm);
-            systemCommands.searchGoogle(searchTerm);
+            systemCommands.searchweb(searchTerm);
             ttsResponse = "Searching Google for " + searchTerm;
+            localGui.updateStatus("Searching Google for " + searchTerm);
         }
         
         // Provide non-blocking feedback, synchronized with mic pause (FIX APPLIED HERE)

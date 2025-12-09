@@ -1,0 +1,30 @@
+<html>
+<head>
+    <style>
+        body { font-family: sans-serif; background-color: #202033; color: #00FF00; margin: 0; padding: 20px; }
+        #log { height: 300px; background: black; border: 1px solid #00FF00; padding: 10px; overflow-y: scroll; margin-bottom: 10px; }
+        .controls button { padding: 10px 20px; margin: 5px; background-color: #007bff; color: white; border: none; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>My Friend 🤖</h1>
+    <div id="log">Command Log:</div>
+    <div class="controls">
+        <button onclick="javaCommand('pause')">Pause Listening</button>
+        <button onclick="javaCommand('resume')">Resume Listening</button>
+        <button onclick="javaCommand('settings')">Settings</button>
+    </div>
+
+    <script>
+        // JavaScript function called by Java to update the log
+        function updateLog(message) {
+            var log = document.getElementById('log');
+            log.innerHTML += "<br>" + message;
+            log.scrollTop = log.scrollHeight; // Scroll to bottom
+        }
+        
+        // This function will be defined by Java's WebEngine and executed when buttons are clicked.
+        var javaCommand;
+    </script>
+</body>
+</html>

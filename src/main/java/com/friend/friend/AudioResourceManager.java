@@ -102,7 +102,7 @@ public class AudioResourceManager {
      * if any audio is actively playing through the system speakers.
      * @return true if system audio is playing, false otherwise.
      */
-    private static boolean isSystemAudioPlaying() {
+    public static boolean isSystemAudioPlaying() {
         try {
             Info[] mixerInfos = AudioSystem.getMixerInfo();
             
@@ -126,12 +126,27 @@ public class AudioResourceManager {
                                 if (!dataLine.isControlSupported(Type.VOLUME)) {
                                     return true; // Assume active if we can't check volume
                                 }
-
-                                FloatControl volume = (FloatControl)dataLine.getControl(Type.VOLUME);
-                                // Check if volume is above a minimal threshold
-                                if (volume.getValue() > 0.01F) { 
-                                    return true;
+                                //=======================
+                                try {
+                                    FloatControl volume = (FloatControl) dataLine.getControl(Type.VOLUME);
+                                    float min = volume.getMinimum();
+                                    float max = volume.getMaximum();
+                                    float val = volume.getValue();
+                                    float epsilon = (max - min) * 0.01f; // 1% threshold
+                                    if (val > min + epsilon) {
+                                        return true;
+                                    }
+                                } catch (IllegalArgumentException iae) {
+                                    return true; // assume active if control lookup unexpectedly fails
                                 }
+                                //=========================
+                                //               Original
+                                // FloatControl volume = (FloatControl)dataLine.getControl(Type.VOLUME);
+                                // // Check if volume is above a minimal threshold
+                                // if (volume.getValue() > 0.01F) { 
+                                //     return true;
+                                // }
+                                //========================================
                             }
                         }
                     } catch (LineUnavailableException e) {

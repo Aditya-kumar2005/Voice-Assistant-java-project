@@ -2,15 +2,15 @@ package com.friend.friend;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Provides folder access and system control commands mapped to natural language verbs.
  * Designed for integration with voice assistants or command interpreters.
  */
 public class FolderCommands {
-
-    private final FileSearcher fileSearcher;
     private final CommandDispatcher dispatcher; // Injected dependency for verbal feedback
 
     /**
@@ -27,30 +27,39 @@ public class FolderCommands {
      * with folder access and system control actions.
      *
      * @param map A mutable command map.
-     * @param fileSearcher The FileSearcher utility for local search logic (currently unused here, but injected).
      * @param dispatcher The CommandDispatcher for providing verbal feedback.
      */
-    public FolderCommands(Map<String, Runnable> map, FileSearcher fileSearcher, CommandDispatcher dispatcher) {
-        this.fileSearcher = fileSearcher;
+    public FolderCommands(Map<String, Runnable> map,CommandDispatcher dispatcher) {
         this.dispatcher = dispatcher;
         
         String userHome = System.getProperty("user.home");
 
         // --- Folder Access Commands ---
-        mapActions(map, "downloads", () -> open(userHome + "\\Downloads"));
-        mapActions(map, "documents", () -> open(userHome + "\\Documents"));
-        mapActions(map, "desktop", () -> open(userHome + "\\Desktop"));
-        mapActions(map, "pictures", () -> open(userHome + "\\Pictures"));
-        mapActions(map, "music", () -> open(userHome + "\\Music"));
-        mapActions(map, "videos", () -> open(userHome + "\\Videos"));
-        mapActions(map, "project", () -> open(userHome + "\\PROJECT"));
+        addFolderMapping(map, "downloads", userHome + "\\Downloads");
+        addFolderMapping(map, "documents", userHome + "\\Documents");
+        addFolderMapping(map, "desktop", userHome + "\\Desktop");
+        addFolderMapping(map, "pictures", userHome + "\\Pictures");
+        addFolderMapping(map, "music", userHome + "\\Music");
+        addFolderMapping(map, "videos", userHome + "\\Videos");
+        addFolderMapping(map, "project", userHome + "\\PROJECT");
 
-        // Optional fallback for OneDrive paths (customized for another user)
-        // NOTE: The path assumes a Windows structure and may need adjustments if the application runs on a different OS.
-        String oneDrive = userHome.replace("Aditya", "nanua") + "\\OneDrive";
-        mapActions(map, "onedrive documents", () -> open(oneDrive + "\\Documents"));
-        mapActions(map, "onedrive desktop", () -> open(oneDrive + "\\Desktop"));
-        mapActions(map, "onedrive project", () -> open(oneDrive + "\\Desktop\\PROJECT"));
+        // Prefer the OneDrive environment variable when available
+        String oneDriveEnv = System.getenv("OneDrive");
+        if (oneDriveEnv != null && new File(oneDriveEnv).exists()) {
+            addFolderMapping(map, "onedrive documents", oneDriveEnv + "\\Documents");
+            addFolderMapping(map, "onedrive desktop", oneDriveEnv + "\\Desktop");
+            addFolderMapping(map, "onedrive project", oneDriveEnv + "\\Desktop\\PROJECT");
+        } else {
+            // fallback heuristic: try a OneDrive path under userHome
+            String oneDriveFallback = userHome + "\\OneDrive";
+            if (new File(oneDriveFallback).exists()) {
+                addFolderMapping(map, "onedrive documents", oneDriveFallback + "\\Documents");
+                addFolderMapping(map, "onedrive desktop", oneDriveFallback + "\\Desktop");
+                addFolderMapping(map, "onedrive project", oneDriveFallback + "\\Desktop\\PROJECT");
+            } else {
+                System.out.println("[FolderCommands]: No OneDrive path found; skipping OneDrive mappings.");
+            }
+        }
 
         // --- System Control Commands ---
         mapActions(map, "enable hotspot", this::enableHotspot);
@@ -63,6 +72,18 @@ public class FolderCommands {
         mapActions(map, "decrease volume", () -> adjustVolume(false));
         mapActions(map, "increase brightness", () -> adjustBrightness(true));
         mapActions(map, "decrease brightness", () -> adjustBrightness(false));
+    }
+
+    /**
+     * Adds a folder mapping only if the path exists on disk.
+     */
+    private void addFolderMapping(Map<String, Runnable> map, String target, String path) {
+        File f = new File(path);
+        if (f.exists() && f.isDirectory()) {
+            mapActions(map, target, () -> open(path));
+        } else {
+            System.out.println("[FolderCommands]: Skipping mapping for '" + target + "' because path not found: " + path);
+        }
     }
 
     /**
@@ -79,21 +100,32 @@ public class FolderCommands {
     }
 
     /**
-     * Opens a folder using Windows Explorer and provides verbal feedback.
+     * Opens a folder using Windows Explorer and provides verbal feedback with friendly responses.
      */
     private void open(String path) {
-        try {
-            // Use cmd /c explorer to ensure compatibility across different Windows environments
-            String command = "explorer \"" + path + "\"";
-            String[] commandArray = {"cmd", "/c", command};
-            Runtime.getRuntime().exec(commandArray);
-            
-            String friendlyName = new File(path).getName();
-            dispatcher.speakResponse("Opening your " + friendlyName + " folder.");
+        File f = new File(path);
+        if (!f.exists() || !f.isDirectory()) {
+            String friendlyError = FriendlyBehavior.fileNotFound(f.getName());
+            dispatcher.speakResponse(friendlyError);
+            System.out.println("[FolderCommands]: Attempted to open missing folder: " + path);
+            return;
+        }
 
-            System.out.println("[FolderCommands]: Successfully executed: " + command);
-        } catch (IOException e) {
-            dispatcher.speakResponse("Sorry, I could not open that folder.");
+        // Use ProcessRunner to run explorer with the path argument (avoids quoting issues)
+        try {
+            int rc = ProcessRunner.run(List.of("cmd", "/c", "explorer", path), 5);
+            if (rc == 0) {
+                String friendlySuccess = FriendlyBehavior.taskComplete("Opening " + f.getName());
+                dispatcher.speakResponse(friendlySuccess);
+                System.out.println("[FolderCommands]: Successfully executed explorer for: " + path);
+            } else {
+                String friendlyError = FriendlyBehavior.apologize() + " " + FriendlyBehavior.appFailedToLaunch("File Explorer");
+                dispatcher.speakResponse(friendlyError);
+                System.out.println("[FolderCommands]: Explorer returned exit=" + rc + " for: " + path);
+            }
+        } catch (IOException | InterruptedException e) {
+            String friendlyError = FriendlyBehavior.appFailedToLaunch("File Explorer");
+            dispatcher.speakResponse(friendlyError);
             System.out.println("[FolderCommands]: Failed to open: " + path);
             e.printStackTrace();
         }
@@ -143,30 +175,46 @@ public class FolderCommands {
      */
     private void runPowerShell(String command, String successResponse) {
         try {
-            String[] cmd = {"powershell", "-Command", command};
-            Runtime.getRuntime().exec(cmd);
-            dispatcher.speakResponse(successResponse);
-            System.out.println("[FolderCommands]: PowerShell executed: " + command);
-        } catch (IOException e) {
-            dispatcher.speakResponse("Sorry, I couldn't run that command.");
+            int rc = ProcessRunner.run(List.of("powershell", "-Command", command), 8);
+            if (rc == 0) {
+                String friendlySuccess = FriendlyBehavior.taskComplete(successResponse);
+                dispatcher.speakResponse(friendlySuccess);
+                System.out.println("[FolderCommands]: PowerShell executed: " + command);
+            } else {
+                String friendlyError = FriendlyBehavior.apologize();
+                dispatcher.speakResponse(friendlyError);
+                System.out.println("[FolderCommands]: PowerShell returned exit=" + rc + " for: " + command);
+            }
+        } catch (IOException | InterruptedException e) {
+            String friendlyError = FriendlyBehavior.appFailedToLaunch("system command");
+            dispatcher.speakResponse(friendlyError);
             System.out.println("[FolderCommands]: PowerShell command failed: " + command);
             e.printStackTrace();
+            Thread.currentThread().interrupt();
         }
     }
 
     /**
-     * Executes a standard CMD command and provides verbal feedback.
+     * Executes a standard CMD command and provides verbal feedback with friendly responses.
      */
     private void runCommand(String command, String successResponse) {
         try {
-            String[] cmd = {"cmd", "/c", command};
-            Runtime.getRuntime().exec(cmd);
-            dispatcher.speakResponse(successResponse);
-            System.out.println("[FolderCommands]: CMD command executed: " + command);
-        } catch (IOException e) {
-            dispatcher.speakResponse("Sorry, I couldn't run that command.");
+            int rc = ProcessRunner.run(List.of("cmd", "/c", command), 8);
+            if (rc == 0) {
+                String friendlySuccess = FriendlyBehavior.taskComplete(successResponse);
+                dispatcher.speakResponse(friendlySuccess);
+                System.out.println("[FolderCommands]: CMD command executed: " + command);
+            } else {
+                String friendlyError = FriendlyBehavior.apologize();
+                dispatcher.speakResponse(friendlyError);
+                System.out.println("[FolderCommands]: CMD returned exit=" + rc + " for: " + command);
+            }
+        } catch (IOException | InterruptedException e) {
+            String friendlyError = FriendlyBehavior.appFailedToLaunch("system command");
+            dispatcher.speakResponse(friendlyError);
             System.out.println("[FolderCommands]: Command failed: " + command);
             e.printStackTrace();
+            Thread.currentThread().interrupt();
         }
     }
 }
