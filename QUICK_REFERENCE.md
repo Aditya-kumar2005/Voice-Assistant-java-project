@@ -486,7 +486,7 @@ METHOD 2: GUI Click (if available)
 └─ Preferences dialog opens
 
 METHOD 3: Programmatic (developers only)
-├─ MergedEchoPilotApp.showPreferencesDialog()
+├─ WebGui.showPreferencesDialog()
 └─ Dialog opens
 
 All methods show the same JavaFX preferences dialog

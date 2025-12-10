@@ -20,7 +20,7 @@ public class LifecycleCommands {
      * @param recognizer The instance of the EchoPilotRecognizer to control.
      */
     // Inside your LifecycleCommands constructor
-    public LifecycleCommands(Map<String, Runnable> map,EchoPilotRecognizer recognizer,MergedEchoPilotApp gui,CommandDispatcher dispatcher) {
+    public LifecycleCommands(Map<String, Runnable> map,EchoPilotRecognizer recognizer,WebGui gui,CommandDispatcher dispatcher) {
 
     for (String trigger : PAUSE_TRIGGERS) {
             map.put(trigger, () -> {

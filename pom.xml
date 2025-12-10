@@ -8,7 +8,7 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven.compiler.release>21</maven.compiler.release>
-		<exec.mainClass>com.friend.friend.Friend</exec.mainClass>
+		<exec.mainClass>com.friend.friend.FriendMain</exec.mainClass>
 		<javafx.version>21.0.2</javafx.version>
 		<javafx.platform>win</javafx.platform>
 		<javafx.sdk.path>C:/javafx-sdk-21.0.9/lib</javafx.sdk.path>
@@ -40,7 +40,7 @@
 							</artifactSet>
 							<transformers>
 								<transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-									<mainClass>com.friend.friend.Friend</mainClass>
+									<mainClass>com.friend.friend.FriendMain</mainClass>
 								</transformer>
 							</transformers>
 						</configuration>

@@ -21,7 +21,7 @@
 │  │  🎤 Voice Input          👁️ GUI Feedback       🔊 Audio Output  │
 │  │  (Microphone)            (Swing+JavaFX)       (TTS Engine)      │
 │  │                                                               │  │
-│  │  EchoPilotRecognizer ←→ MergedEchoPilotApp ←→ SpeechEngine        │  │
+│  │  EchoPilotRecognizer ←→ WebGui ←→ SpeechEngine        │  │
 │  │  - Detects speech        - Displays status    - Text-to-Speech │
 │  │  - Recognizes commands   - Shows results      - Plays audio    │
 │  │  - Handles audio input   - Updates display   - Voice playback  │
@@ -69,7 +69,7 @@
 │                    MANAGEMENT LAYER                                  │
 ├─────────────────────────────────────────────────────────────────────┤
 │                                                                       │
-│  📋 SettingsManager      🎨 PreferencesDialog    🌉 MergedEchoPilotApp  │
+│  📋 SettingsManager      🎨 PreferencesDialog    🌉 WebGui  │
 │  - Persistent storage   - Modern UI interface   - Swing/JavaFX      │
 │  - JSON serialization   - Theme switching       - Thread safety     │
 │  - 11 preference fields - Real-time updates     - Dialog mgmt       │
@@ -121,10 +121,10 @@ Application Start (Friend.main())
         ├─ Initialize ErrorReporter
         │  └─ Enable/disable telemetry based on settings
         │
-        ├─ Initialize MergedEchoPilotApp
+        ├─ Initialize WebGui
         │  └─ Set up Swing/JavaFX integration
         │
-        ├─ Create MergedEchoPilotApp (Swing window)
+        ├─ Create WebGui (Swing window)
         │  └─ Display main interface
         │
         ├─ Initialize Core Services
@@ -219,10 +219,10 @@ Matches against grammar/commands
 User says: "preferences"
         │
         ▼
-CommandDispatcher routes to MergedEchoPilotApp
+CommandDispatcher routes to WebGui
         │
         ▼
-MergedEchoPilotApp.showPreferencesDialog()
+WebGui.showPreferencesDialog()
         │
         ├─ Platform.runLater() [JavaFX Thread]
         │
@@ -441,7 +441,7 @@ Friend/ (Application Root)
 │   ├── main/
 │   │   ├── java/com/friend/friend/
 │   │   │   ├─ Friend.java                    (Entry point)
-│   │   │   ├─ MergedEchoPilotApp.java             (Swing UI)
+│   │   │   ├─ WebGui.java             (Swing UI)
 │   │   │   ├─ EchoPilotRecognizer.java      (Voice recognition)
 │   │   │   ├─ SpeechEngine.java             (TTS engine)
 │   │   │   ├─ CommandDispatcher.java        (Command routing)
@@ -460,7 +460,7 @@ Friend/ (Application Root)
 │   │   │   │
 │   │   │   ├─ SettingsManager.java          (Settings storage)
 │   │   │   ├─ PreferencesDialog.java        (Preferences UI)
-│   │   │   ├─ MergedEchoPilotApp.java           (Swing/JavaFX bridge)
+│   │   │   ├─ WebGui.java           (Swing/JavaFX bridge)
 │   │   │   ├─ HelpSystem.java               (Command help)
 │   │   │   ├─ ErrorReporter.java            (Error tracking)
 │   │   │   ├─ OnboardingWizard.java         (First-launch setup)
@@ -733,7 +733,7 @@ Log Files:
 
 ## 📱 User Interface Breakdown
 
-### Main Window (MergedEchoPilotApp - Swing)
+### Main Window (WebGui - Swing)
 
 ```
 ┌─────────────────────────────────────────┐

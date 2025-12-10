@@ -5,12 +5,11 @@ import org.slf4j.LoggerFactory;
 import java.awt.AWTException;
 import java.io.File;
 import java.util.HashMap;
-import java.util.Map;
-import javax.swing.SwingUtilities; // We still import Swing for the TrayController, but remove invokeLater
+import java.util.Map;// We still import Swing for the TrayController, but remove invokeLater
 import javafx.application.Platform;
 
 public class FriendMain {
-    private static final Logger logger = LoggerFactory.getLogger(Friend.class);
+    private static final Logger logger = LoggerFactory.getLogger(FriendMain.class);
     private static final String LOG_DIRECTORY_PATH = "./logs/";
     
     // Using a standard main method to ensure the application starts correctly
@@ -61,7 +60,7 @@ public class FriendMain {
             logger.warn("[Main] JavaFX Platform already running or failed startup check.", e);
         }
         
-        // Launch the WebGui (formerly MergedEchoPilotApp) on a NEW THREAD 
+        // Launch the WebGui (formerly WebGui) on a NEW THREAD 
         // using the new launchGui static method.
         Thread guiLaunchThread = new Thread(() -> {
             try {
@@ -110,10 +109,8 @@ public class FriendMain {
             
             try {
                 // Initial status updates must be on the JavaFX thread
-                Platform.runLater(() -> {
-                    finalLocalGui.updateStatus("========(<*>)======="); 
                     finalLocalGui.showLoadingAnimation(); 
-                });
+            
                 logger.info("[InitThread] Starting heavy service initialization (TTS/Recognizer)...");
                 
                 // 3. Initialize core service: TTS
@@ -129,18 +126,18 @@ public class FriendMain {
                 dispatcher.setRecognizer(recognizer); 
 
                 // 6. Initialize Command Groups
-                // NOTE: We replace MergedEchoPilotApp calls with dummy methods or WebGui equivalents
-                // WebGui is now the new MergedEchoPilotApp
+                // NOTE: We replace WebGui calls with dummy methods or WebGui equivalents
+                // WebGui is now the new WebGui
                 // WebGui.initializeBridge(settingsManager); // We assume this logic is moved or simplified
                 logger.info("[InitThread] Initializing Media Commands...");
                 MediaCommands mediaCommands = new MediaCommands(commandMap, tts, recognizer, dispatcher);
-
+            
                 logger.info("[InitThread] Initializing System Commands...");
                 SystemCommands systemCommands = new SystemCommands(commandMap, tts, recognizer, mediaCommands);
                 dispatcher.setSystemCommands(systemCommands);
                 
                 logger.info("[InitThread] Initializing other command groups...");
-                new AppCommands(commandMap, settingsManager);
+                new AppCommands(commandMap, settingsManager,tts,recognizer,finalLocalGui);
                 new LifecycleCommands(commandMap, recognizer, finalLocalGui, dispatcher);
                 new FolderCommands(commandMap, dispatcher);
                 

@@ -1,7 +1,6 @@
 com\friend\friend\DiskSpaceHealthCheck.class
 com\friend\friend\MediaCommands.class
 com\friend\friend\MicrophoneHealthCheck.class
-com\friend\friend\MergedEchoPilotApp$Delta.class
 com\friend\friend\TrayController.class
 com\friend\friend\PreferencesDialog$3.class
 com\friend\friend\PreferencesDialog.class
@@ -10,11 +9,11 @@ com\friend\friend\EmotionDetector.class
 com\friend\friend\TTSHealthCheck.class
 com\friend\friend\SpeechEngine.class
 com\friend\friend\LifecycleCommands.class
+com\friend\friend\WebGui.class
 com\friend\friend\SettingsManager$Settings.class
 com\friend\friend\HealthCheck$HealthCheckResult.class
 com\friend\friend\PreferencesDialog$4.class
 com\friend\friend\ProcessRunner.class
-com\friend\friend\MergedEchoPilotApp.class
 com\friend\friend\OnboardingWizard.class
 com\friend\friend\AudioResourceManager.class
 com\friend\friend\EchoPilotRecognizer$1.class
@@ -24,9 +23,10 @@ com\friend\friend\CommandDispatcher.class
 com\friend\friend\AppCommands.class
 com\friend\friend\Skill.class
 com\friend\friend\PreferencesDialog$2.class
+com\friend\friend\WebGui$WebBridge.class
 com\friend\friend\FolderCommands.class
+com\friend\friend\FriendMain.class
 com\friend\friend\AssistantOverlay.class
-com\friend\friend\Friend.class
 com\friend\friend\ErrorReporter.class
 com\friend\friend\HelpSystem.class
 com\friend\friend\SystemCommands.class

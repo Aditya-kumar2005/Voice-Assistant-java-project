@@ -1,0 +1,218 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #101018; /* Even darker, sleek background */
+    color: #E0E0E0; /* Light text */
+    margin: 0;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    box-sizing: border-box;
+}
+
+h1 {
+    color: #00BFFF; /* Electric Cyan accent for the title */
+    font-size: 2em;
+    font-weight: 700;
+    margin-top: 0;
+    margin-bottom: 10px; /* Reduced space before animation */
+    text-align: center;
+    text-shadow: 0 0 5px rgba(0, 191, 255, 0.5); /* Title glow */
+}
+
+/* COMMAND LOG AREA */
+#log {
+    flex-grow: 1; /* This makes the log area take up all the middle space */
+    background: rgba(0, 0, 0, 0.7); /* Slightly transparent for depth */
+    border: 2px solid #00BFFF; /* Electric Cyan border */
+    border-radius: 5px; /* Softer corners */
+    padding: 10px;
+    overflow-y: auto;
+    margin-bottom: 15px; /* Reduced space for better use of screen */
+    font-family: 'Consolas', monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    box-shadow: 0 0 15px rgba(0, 191, 255, 0.4); /* Stronger neon glow */
+}
+
+.log-line {
+    display: block;
+    color: #00FF99; /* Bright green text for log lines */
+    margin-top: 1px;
+}
+
+/* CONTROL PANEL */
+.controls {
+    display: flex;
+    justify-content: center;
+    padding-bottom: 0; /* No bottom padding needed as it's the last element */
+}
+
+/* BUTTONS */
+.controls button {
+    padding: 12px 22px;
+    margin: 0 7px;
+    color: #101018; /* Dark text on buttons */
+    border: none;
+    border-radius: 5px; /* Changed to match log area */
+    cursor: pointer;
+    font-weight: 700;
+    transition: background-color 0.2s, transform 0.1s, box-shadow 0.2s;
+    box-shadow: 0 4px #000000; /* Darker 3D effect */
+}
+
+/* Specific Button Colors (Kept your nice color coding) */
+#pauseBtn { background-color: #FF7043; } /* Orange Pause */
+#resumeBtn { background-color: #4DD0E1; } /* Light Blue/Teal Resume */
+#settingsBtn { background-color: #FFAB40; } /* Amber Settings */
+#clearBtn { background-color: #E57373; } /* Light Red Clear */
+
+/* Hover Effect */
+.controls button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px #000000; /* Bigger lift and shadow */
+    opacity: 0.95;
+}
+
+/* Active/Click Effect */
+.controls button:active {
+    transform: translateY(0px); /* Back to normal position */
+    box-shadow: 0 2px #000000;
+}
+
+/* ---------------------------------------------------- */
+/* --- JARVIS ANIMATION STYLING (The Spinning Engine) --- */
+/* ---------------------------------------------------- */
+
+.jarvis-container {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* Making it slightly smaller and more contained for the top area */
+    width: 150px;
+    height: 150px;
+    margin: 10px auto 20px auto; /* Centered with a bit more space below it */
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+}
+
+.jarvis-container.active {
+    opacity: 1;
+}
+
+/* 📝 The text in the center */
+.jarvis-text {
+    position: absolute;
+    color: #FFFFFF; /* White for the core */
+    font-size: 20px;
+    letter-spacing: 0.15em;
+    text-shadow: 0 0 5px #00BFFF, 0 0 15px #00BFFF; /* Stronger cyan glow */
+    z-index: 5;
+    animation: text-pulse 2s ease-in-out infinite alternate;
+    font-weight: bold;
+}
+
+/* 💍 The basic style for ALL rings */
+.ring {
+    position: absolute;
+    border-style: solid;
+    border-radius: 50%;
+    /* Shadow uses a custom variable for color and is stronger */
+    box-shadow: 0 0 8px var(--ring-color), 0 0 15px var(--ring-color);
+    animation: spin 10s linear infinite;
+}
+
+/* --- Ring Customization (Slightly adjusted colors/speed for flow) --- */
+
+.ring-1 {
+    --ring-color: #00BFFF; /* Electric Cyan */
+    width: 95%;
+    height: 95%;
+    border-width: 3px;
+    border-color: var(--ring-color) transparent transparent transparent;
+    animation-duration: 12s;
+}
+
+.ring-2 {
+    --ring-color: #00FF99; /* Neon Green */
+    width: 75%;
+    height: 75%;
+    border-width: 2px;
+    border-color: transparent transparent var(--ring-color) transparent;
+    animation-duration: 8s;
+    animation-direction: reverse;
+}
+
+.ring-3 {
+    --ring-color: #FFFFFF; /* White Wave */
+    width: 0px;
+    height: 0px;
+    border-width: 2px;
+    border-color: var(--ring-color);
+    opacity: 0;
+    animation: spin 8s linear infinite, expand-pulse 4s ease-out infinite;
+}
+
+.ring-4 {
+    --ring-color: #00BFFF; /* Cyan Wave Echo */
+    width: 0px;
+    height: 0px;
+    border-width: 1px;
+    border-color: var(--ring-color);
+    opacity: 0;
+    animation: spin 7s linear infinite reverse, expand-pulse 4s ease-out 2s infinite;
+}
+
+.ring-5 {
+    --ring-color: #00BFFF; /* Cyan Inner Ring */
+    width: 50%;
+    height: 50%;
+    border-width: 2px;
+    border-color: var(--ring-color);
+    animation: spin 10s linear infinite, pulse 3s ease-in-out infinite alternate;
+    opacity: 0.8;
+}
+
+.ring-6 {
+    --ring-color: #FFFFFF; /* White Core */
+    width: 30%;
+    height: 30%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.4) 0%, rgba(0, 0, 0, 0.6) 100%);
+    border-width: 0;
+    box-shadow: 0 0 15px var(--ring-color), inset 0 0 8px var(--ring-color);
+    animation: pulse 4s ease-in-out infinite alternate;
+}
+
+/* 🪄 Animation for the text pulse */
+@keyframes text-pulse {
+    0% { transform: scale(0.95); opacity: 0.9; }
+    100% { transform: scale(1.02); opacity: 1; }
+}
+
+/* 🌊 The Story of the Expanding Wave */
+@keyframes expand-pulse {
+    0% {
+        transform: scale(0.1);
+        opacity: 0.9;
+        border-width: 3px;
+    }
+    100% {
+        transform: scale(1.5);
+        opacity: 0;
+        border-width: 0.5px;
+    }
+}
+
+/* 💓 The Story of the Heartbeat */
+@keyframes pulse {
+    0% { transform: scale(1); opacity: 0.7; }
+    50% { transform: scale(1.05); opacity: 1; }
+    100% { transform: scale(1); opacity: 0.7; }
+}
+
+/* 2. ROTATING ANIMATION */
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}

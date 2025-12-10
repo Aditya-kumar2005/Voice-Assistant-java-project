@@ -6,6 +6,13 @@
 	"configurations": [
 		{
 			"type": "java",
+			"name": "FriendMain",
+			"request": "launch",
+			"mainClass": "com.friend.friend.FriendMain",
+			"projectName": "Friend"
+		},
+		{
+			"type": "java",
 			"name": "Friend",
 			"request": "launch",
 			"mainClass": "com.friend.friend.Friend",
@@ -19,9 +26,9 @@
 		},
 		{
 			"type": "java",
-			"name": "MergedEchoPilotApp",
+			"name": "WebGui",
 			"request": "launch",
-			"mainClass": "com.friend.friend.MergedEchoPilotApp",
+			"mainClass": "com.friend.friend.WebGui",
 			"projectName": "Friend",
 			"vmArgs": "--module-path \"C:/javafx-sdk-21.0.9/lib\" --add-modules javafx.controls,javafx.fxml,javafx.graphics,javafx.swing,javafx.web"
 		}

@@ -13,7 +13,7 @@
                 <exec.vmArgs>-Xms10m</exec.vmArgs>
                 <exec.args>${exec.vmArgs} -classpath %classpath ${exec.mainClass} ${exec.appArgs}</exec.args>
                 <exec.appArgs>--module-path \"C:/javafx-sdk-21.0.9/lib\" --add-modules javafx.controls,javafx.fxml,javafx.graphics,javafx.swing,javafx.web</exec.appArgs>
-                <exec.mainClass>com.friend.friend.MergedEchoPilotApp</exec.mainClass>
+                <exec.mainClass>com.friend.friend.WebGui</exec.mainClass>
                 <exec.executable>java</exec.executable>
                 <exec.workingdir>C:\Users\nanua\OneDrive\Desktop\PROJECT\Friend</exec.workingdir>
                 <jshell.run.enable>true</jshell.run.enable>
@@ -32,7 +32,7 @@
                 <exec.vmArgs>-Xms10m -agentlib:jdwp=transport=dt_socket,server=n,address=${jpda.address}</exec.vmArgs>
                 <exec.args>${exec.vmArgs} -classpath %classpath ${exec.mainClass} ${exec.appArgs}</exec.args>
                 <exec.appArgs>--module-path \"C:/javafx-sdk-21.0.9/lib\" --add-modules javafx.controls,javafx.fxml,javafx.graphics,javafx.swing,javafx.web</exec.appArgs>
-                <exec.mainClass>com.friend.friend.MergedEchoPilotApp</exec.mainClass>
+                <exec.mainClass>com.friend.friend.WebGui</exec.mainClass>
                 <exec.executable>java</exec.executable>
                 <jpda.listen>true</jpda.listen>
                 <exec.workingdir>C:\Users\nanua\OneDrive\Desktop\PROJECT\Friend</exec.workingdir>
@@ -51,7 +51,7 @@
             <properties>
                 <exec.vmArgs>-Xms10m</exec.vmArgs>
                 <exec.args>${exec.vmArgs} -classpath %classpath ${exec.mainClass} ${exec.appArgs}</exec.args>
-                <exec.mainClass>com.friend.friend.MergedEchoPilotApp</exec.mainClass>
+                <exec.mainClass>com.friend.friend.WebGui</exec.mainClass>
                 <exec.executable>java</exec.executable>
                 <exec.appArgs>--module-path \"C:/javafx-sdk-21.0.9/lib\" --add-modules javafx.controls,javafx.fxml,javafx.graphics,javafx.swing,javafx.web</exec.appArgs>
                 <exec.workingdir>C:\Users\nanua\OneDrive\Desktop\PROJECT\Friend</exec.workingdir>

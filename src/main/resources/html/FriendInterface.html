@@ -1,30 +1,36 @@
+<!DOCTYPE html>
 <html>
 <head>
-    <style>
-        body { font-family: sans-serif; background-color: #202033; color: #00FF00; margin: 0; padding: 20px; }
-        #log { height: 300px; background: black; border: 1px solid #00FF00; padding: 10px; overflow-y: scroll; margin-bottom: 10px; }
-        .controls button { padding: 10px 20px; margin: 5px; background-color: #007bff; color: white; border: none; cursor: pointer; }
-    </style>
+    <meta charset="UTF-8">
+    <title>My Friend Assistant 🤖</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <h1>My Friend 🤖</h1>
-    <div id="log">Command Log:</div>
-    <div class="controls">
-        <button onclick="javaCommand('pause')">Pause Listening</button>
-        <button onclick="javaCommand('resume')">Resume Listening</button>
-        <button onclick="javaCommand('settings')">Settings</button>
-    </div>
+    
+    <h1>My Friend Assistant 🤖</h1>
+    
+        <div id="jarvis-container" class="jarvis-container">         <div class="ring ring-3"></div>
+        <div class="ring ring-4"></div>
+        
+        <div class="ring ring-1"></div> 
+        <div class="ring ring-2"></div>
+        
+        <div class="ring ring-5"></div>
+        <div class="ring ring-6"></div>
+        
+        <div class="jarvis-text">JARVIS</div> 
+    </div>
 
-    <script>
-        // JavaScript function called by Java to update the log
-        function updateLog(message) {
-            var log = document.getElementById('log');
-            log.innerHTML += "<br>" + message;
-            log.scrollTop = log.scrollHeight; // Scroll to bottom
-        }
-        
-        // This function will be defined by Java's WebEngine and executed when buttons are clicked.
-        var javaCommand;
-    </script>
+        <div id="log">
+        <span class="log-line">--- Command History ---</span>
+        </div>
+    
+        <div class="controls">
+        <button id="pauseBtn" onclick="javaCommand('pause')">Pause Listening</button>
+        <button id="resumeBtn" onclick="javaCommand('resume')">Resume Listening</button>
+        <button id="settingsBtn" onclick="javaCommand('settings')">Settings</button>
+                <button id="clearBtn" onclick="clearChat()">Clear Chat</button> 
+    </div>
+    <script src="script.js"></script>
 </body>
 </html>
